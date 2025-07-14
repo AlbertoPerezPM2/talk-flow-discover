@@ -9,32 +9,44 @@ All colors MUST be HSL.
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 0 0% 6.7%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 6.7%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 0 0% 6.7%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 0 85% 51.8%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 6.7%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 6.7%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 85% 51.8%;
+
+    --radius: 0.5rem;
+
+    /* TED Red specific colors */
+    --ted-red: 0 85% 51.8%;
+    --ted-red-dark: 0 85% 41.8%;
+
+    /* Shadows */
+    --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+    /* Transitions */
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
     --radius: 0.5rem;
 
@@ -100,6 +112,25 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-family: Inter, Helvetica, Arial, sans-serif;
+  }
+}
+
+@layer components {
+  .ted-card {
+    @apply bg-card rounded-lg p-6 border shadow-[var(--shadow-subtle)] transition-[var(--transition-smooth)] hover:-translate-y-1;
+  }
+
+  .ted-button {
+    @apply bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium transition-[var(--transition-smooth)] hover:bg-primary/90 focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+
+  .ted-chip {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-secondary text-secondary-foreground cursor-pointer transition-[var(--transition-smooth)] hover:bg-primary hover:text-primary-foreground;
+  }
+
+  .ted-chip.active {
+    @apply bg-primary text-primary-foreground;
   }
 }
