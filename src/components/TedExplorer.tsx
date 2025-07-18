@@ -30,6 +30,8 @@ interface PlaylistTalk {
 interface TimelineTalk {
   title: string;
   year: number;
+  month: number;
+  day: number;
   thumbnail: string;
   url: string;
 }
@@ -40,22 +42,6 @@ async function fetchGen(action: string, payload: any): Promise<any> {
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   switch (action) {
-    case 'linkedin':
-      return {
-        text: `🎯 Just watched an incredible TED Talk: "${payload.title || 'Amazing Ideas Worth Spreading'}"
-
-The key insights that resonated with me:
-• Innovation starts with questioning assumptions
-• Small actions create ripple effects of change  
-• Vulnerability is the birthplace of creativity
-
-What struck me most was how the speaker connected [specific concept] to real-world applications. This completely shifted my perspective on [relevant topic].
-
-Worth 18 minutes of your time. Link in comments 👇
-
-#TEDTalk #Innovation #Leadership #Growth`
-      };
-    
     case 'whywatch':
       return {
         text: "A transformative perspective on how small changes in thinking can create massive shifts in outcomes."
@@ -63,26 +49,30 @@ Worth 18 minutes of your time. Link in comments 👇
     
     case 'recs':
       return {
-        list: [
-          {
-            title: "The Power of Vulnerability",
-            speaker: "Brené Brown",
-            url: "https://ted.com/talks/brene_brown_the_power_of_vulnerability",
-            thumbnail: "/api/placeholder/200/150"
-          },
-          {
-            title: "How Great Leaders Inspire Action",
-            speaker: "Simon Sinek", 
-            url: "https://ted.com/talks/simon_sinek_how_great_leaders_inspire_action",
-            thumbnail: "/api/placeholder/200/150"
-          },
-          {
-            title: "Your Body Language May Shape Who You Are",
-            speaker: "Amy Cuddy",
-            url: "https://ted.com/talks/amy_cuddy_your_body_language_may_shape_who_you_are",
-            thumbnail: "/api/placeholder/200/150"
-          }
-        ] as TalkRecommendation[]
+        list: {
+          "Psychology & Personal Growth": [
+            {
+              title: "The Power of Vulnerability",
+              speaker: "Brené Brown",
+              url: "https://ted.com/talks/brene_brown_the_power_of_vulnerability",
+              thumbnail: "/api/placeholder/200/150"
+            },
+            {
+              title: "Your Body Language May Shape Who You Are",
+              speaker: "Amy Cuddy",
+              url: "https://ted.com/talks/amy_cuddy_your_body_language_may_shape_who_you_are",
+              thumbnail: "/api/placeholder/200/150"
+            }
+          ],
+          "Leadership & Innovation": [
+            {
+              title: "How Great Leaders Inspire Action",
+              speaker: "Simon Sinek", 
+              url: "https://ted.com/talks/simon_sinek_how_great_leaders_inspire_action",
+              thumbnail: "/api/placeholder/200/150"
+            }
+          ]
+        }
       };
     
     case 'playlist':
@@ -118,24 +108,32 @@ Worth 18 minutes of your time. Link in comments 👇
           {
             title: "Machines That Think",
             year: 2015,
+            month: 6,
+            day: 15,
             thumbnail: "/api/placeholder/200/150",
             url: "https://ted.com/talks/machines_that_think"
           },
           {
             title: "The Rise of AI",
             year: 2017,
+            month: 3,
+            day: 22,
             thumbnail: "/api/placeholder/200/150", 
             url: "https://ted.com/talks/rise_of_ai"
           },
           {
             title: "How AI Can Save Our Humanity", 
             year: 2019,
+            month: 11,
+            day: 8,
             thumbnail: "/api/placeholder/200/150",
             url: "https://ted.com/talks/ai_save_humanity"
           },
           {
             title: "The Future of Human-AI Collaboration",
             year: 2021,
+            month: 9,
+            day: 12,
             thumbnail: "/api/placeholder/200/150",
             url: "https://ted.com/talks/future_human_ai"
           }
@@ -159,12 +157,12 @@ const MoodChip: React.FC<{ mood: string; selected: boolean; onClick: () => void 
 );
 
 const TedExplorer: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('explore');
+  const [activeTab, setActiveTab] = useState('trace');
   const [loading, setLoading] = useState(false);
   const [talkUrl, setTalkUrl] = useState('');
-  const [linkedinPost, setLinkedinPost] = useState('');
+  const [currentTalk, setCurrentTalk] = useState<{ title: string; thumbnail: string; url: string } | null>(null);
   const [whyWatch, setWhyWatch] = useState('');
-  const [recommendations, setRecommendations] = useState<TalkRecommendation[]>([]);
+  const [recommendations, setRecommendations] = useState<{ [category: string]: TalkRecommendation[] }>({});
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [customMood, setCustomMood] = useState('');
   const [playlist, setPlaylist] = useState<PlaylistTalk[]>([]);
@@ -177,13 +175,17 @@ const TedExplorer: React.FC = () => {
     
     setLoading(true);
     try {
-      const [postResult, whyResult, recsResult] = await Promise.all([
-        fetchGen('linkedin', { url: talkUrl }),
+      const [whyResult, recsResult] = await Promise.all([
         fetchGen('whywatch', { url: talkUrl }),
         fetchGen('recs', { url: talkUrl })
       ]);
       
-      setLinkedinPost(postResult.text);
+      // Mock current talk data
+      setCurrentTalk({
+        title: "The Future of Innovation",
+        thumbnail: "/api/placeholder/400/300",
+        url: talkUrl
+      });
       setWhyWatch(whyResult.text);
       setRecommendations(recsResult.list);
     } catch (error) {
@@ -263,13 +265,17 @@ const TedExplorer: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">TED Talk Explorer</h1>
-          <p className="text-lg text-muted-foreground">Discover, explore, and trace ideas worth spreading</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2">TED Suite 2.0</h1>
+          <p className="text-lg text-muted-foreground">New ways to T.E.D. ideas worth spreading</p>
         </div>
 
         {/* Navigation Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 mb-8">
+            <TabsTrigger value="trace" className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Trace
+            </TabsTrigger>
             <TabsTrigger value="explore" className="flex items-center gap-2">
               <Compass className="w-4 h-4" />
               Explore
@@ -277,10 +283,6 @@ const TedExplorer: React.FC = () => {
             <TabsTrigger value="discover" className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
               Discover
-            </TabsTrigger>
-            <TabsTrigger value="trace" className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Trace
             </TabsTrigger>
           </TabsList>
 
@@ -306,34 +308,31 @@ const TedExplorer: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Results Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-              {/* LinkedIn Post */}
-              <Card className="ted-card">
-                <CardHeader>
-                  <CardTitle>LinkedIn Post</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Textarea
-                    value={linkedinPost}
-                    readOnly
-                    className="h-48 resize-none"
-                    placeholder="Generated LinkedIn post will appear here..."
-                  />
-                </CardContent>
-                <CardFooter>
-                  <Button
-                    onClick={() => copyToClipboard(linkedinPost)}
-                    disabled={!linkedinPost}
-                    variant="outline"
-                    className="w-full flex items-center gap-2"
+            {/* Current Talk Thumbnail */}
+            {currentTalk && (
+              <Card className="w-full max-w-2xl mx-auto ted-card">
+                <CardContent className="p-0">
+                  <a
+                    href={currentTalk.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block hover:opacity-80 transition-opacity"
                   >
-                    <Copy className="w-4 h-4" />
-                    Copy to clipboard
-                  </Button>
-                </CardFooter>
+                    <img
+                      src={currentTalk.thumbnail}
+                      alt={`${currentTalk.title} thumbnail`}
+                      className="w-full h-64 object-cover rounded-lg cursor-pointer"
+                    />
+                  </a>
+                  <div className="p-4">
+                    <h3 className="text-xl font-semibold">{currentTalk.title}</h3>
+                  </div>
+                </CardContent>
               </Card>
+            )}
 
+            {/* Results Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
               {/* Why Watch */}
               <Card className="ted-card">
                 <CardHeader>
@@ -352,26 +351,35 @@ const TedExplorer: React.FC = () => {
                   <CardTitle>You might also like…</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {recommendations.length > 0 ? (
-                      recommendations.map((rec, idx) => (
-                        <div key={idx} className="flex items-start space-x-3">
-                          <img
-                            src={rec.thumbnail}
-                            alt={`${rec.title} thumbnail`}
-                            className="w-16 h-12 object-cover rounded"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm line-clamp-2">{rec.title}</h4>
-                            <p className="text-sm text-muted-foreground">{rec.speaker}</p>
-                            <a
-                              href={rec.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary text-xs hover:underline flex items-center gap-1 mt-1"
-                            >
-                              Watch <ExternalLink className="w-3 h-3" />
-                            </a>
+                  <div className="space-y-6">
+                    {Object.keys(recommendations).length > 0 ? (
+                      Object.entries(recommendations).map(([category, recs]) => (
+                        <div key={category}>
+                          <h4 className="font-medium text-sm mb-3 text-primary">
+                            If you're interested in {category}
+                          </h4>
+                          <div className="space-y-3">
+                            {recs.map((rec, idx) => (
+                              <div key={idx} className="flex items-start space-x-3">
+                                <img
+                                  src={rec.thumbnail}
+                                  alt={`${rec.title} thumbnail`}
+                                  className="w-16 h-12 object-cover rounded"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="font-medium text-sm line-clamp-2">{rec.title}</h5>
+                                  <p className="text-sm text-muted-foreground">{rec.speaker}</p>
+                                  <a
+                                    href={rec.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary text-xs hover:underline flex items-center gap-1 mt-1"
+                                  >
+                                    Watch <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       ))
@@ -481,28 +489,48 @@ const TedExplorer: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Timeline Carousel */}
+            {/* Vertical Timeline */}
             {timeline.length > 0 && (
-              <div className="overflow-x-auto pb-4">
-                <div className="flex space-x-4 min-w-max">
+              <div className="max-w-4xl mx-auto">
+                <div className="relative">
+                  {/* Vertical line */}
+                  <div className="absolute left-1/2 transform -translate-x-0.5 w-1 bg-primary h-full"></div>
+                  
                   {timeline.map((talk, idx) => (
-                    <a
-                      key={idx}
-                      href={talk.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-shrink-0 w-48 ted-card block hover:shadow-lg transition-shadow"
-                    >
-                      <img
-                        src={talk.thumbnail}
-                        alt={`${talk.title} thumbnail`}
-                        className="w-full h-32 object-cover rounded-t-lg"
-                      />
-                      <div className="p-4 text-center">
-                        <h3 className="font-medium text-sm line-clamp-2 mb-2">{talk.title}</h3>
-                        <span className="text-2xl font-bold text-primary">{talk.year}</span>
+                    <div key={idx} className={`relative flex items-center mb-12 ${idx % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
+                      {/* Timeline dot */}
+                      <div className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-primary rounded-full border-4 border-background z-10"></div>
+                      
+                      {/* Content */}
+                      <div className={`w-5/12 ${idx % 2 === 0 ? 'pr-8 text-right' : 'pl-8 text-left'}`}>
+                        <Card className="ted-card">
+                          <CardContent className="p-0">
+                            <a
+                              href={talk.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block hover:opacity-80 transition-opacity"
+                            >
+                              <img
+                                src={talk.thumbnail}
+                                alt={`${talk.title} thumbnail`}
+                                className="w-full h-32 object-cover rounded-t-lg cursor-pointer"
+                              />
+                            </a>
+                            <div className="p-4">
+                              <h3 className="font-semibold text-sm mb-2 line-clamp-2">{talk.title}</h3>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(talk.year, talk.month - 1, talk.day).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </p>
+                            </div>
+                          </CardContent>
+                        </Card>
                       </div>
-                    </a>
+                    </div>
                   ))}
                 </div>
               </div>
