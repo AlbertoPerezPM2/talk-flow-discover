@@ -163,7 +163,7 @@ const TedExplorer: React.FC = () => {
   const [currentTalk, setCurrentTalk] = useState<{ title: string; thumbnail: string; url: string } | null>(null);
   const [whyWatch, setWhyWatch] = useState('');
   const [recommendations, setRecommendations] = useState<{ [category: string]: TalkRecommendation[] }>({});
-  const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+  const [selectedMood, setSelectedMood] = useState<string>('');
   const [customMood, setCustomMood] = useState('');
   const [playlist, setPlaylist] = useState<PlaylistTalk[]>([]);
   const [topic, setTopic] = useState('');
@@ -200,7 +200,7 @@ const TedExplorer: React.FC = () => {
   };
 
   const handleGeneratePlaylist = async () => {
-    const mood = selectedMoods.join(', ') || customMood;
+    const mood = selectedMood || customMood;
     if (!mood.trim()) return;
     
     setLoading(true);
@@ -252,20 +252,13 @@ const TedExplorer: React.FC = () => {
     }
   };
 
-  const toggleMood = (mood: string) => {
-    setSelectedMoods(prev => 
-      prev.includes(mood) 
-        ? prev.filter(m => m !== mood)
-        : [...prev, mood]
-    );
-  };
 
   return (
     <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">TED Suite 2.0</h1>
+          <h1 className="text-4xl font-bold text-foreground mb-2">TED Suite 2.0 (Powered by "Teddy")</h1>
           <p className="text-lg text-muted-foreground">New ways to T.E.D. ideas worth spreading</p>
         </div>
 
@@ -406,8 +399,8 @@ const TedExplorer: React.FC = () => {
                       <MoodChip
                         key={mood}
                         mood={mood}
-                        selected={selectedMoods.includes(mood)}
-                        onClick={() => toggleMood(mood)}
+                        selected={selectedMood === mood}
+                        onClick={() => setSelectedMood(selectedMood === mood ? '' : mood)}
                       />
                     ))}
                   </div>
@@ -419,7 +412,7 @@ const TedExplorer: React.FC = () => {
                 />
                 <Button
                   onClick={handleGeneratePlaylist}
-                  disabled={loading || (selectedMoods.length === 0 && !customMood.trim())}
+                  disabled={loading || (!selectedMood && !customMood.trim())}
                   className="w-full ted-button flex items-center gap-2"
                 >
                   <ListMusic className="w-4 h-4" />
@@ -537,6 +530,12 @@ const TedExplorer: React.FC = () => {
             )}
           </TabsContent>
         </Tabs>
+        
+        <footer className="mt-16 py-8 border-t border-border bg-muted/30">
+          <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+            Capstone Project for Data Science & AI Bootcamp done by Paul Petersohn and Alberto Pérez. Copyright 2025
+          </div>
+        </footer>
       </div>
     </div>
   );
