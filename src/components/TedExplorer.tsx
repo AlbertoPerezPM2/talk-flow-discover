@@ -36,112 +36,31 @@ interface TimelineTalk {
   url: string;
 }
 
-// Mock API function
-async function fetchGen(action: string, payload: any): Promise<any> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  switch (action) {
-    case 'whywatch':
-      return {
-        text: "A transformative perspective on how small changes in thinking can create massive shifts in outcomes."
-      };
+// Real API function to connect to your Python backend
+async function callTeddyAPI(endpoint: string, payload: any): Promise<any> {
+  try {
+    const response = await fetch(`http://localhost:5000/api/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
     
-    case 'recs':
-      return {
-        list: {
-          "Psychology & Personal Growth": [
-            {
-              title: "The Power of Vulnerability",
-              speaker: "Brené Brown",
-              url: "https://ted.com/talks/brene_brown_the_power_of_vulnerability",
-              thumbnail: "/api/placeholder/200/150"
-            },
-            {
-              title: "Your Body Language May Shape Who You Are",
-              speaker: "Amy Cuddy",
-              url: "https://ted.com/talks/amy_cuddy_your_body_language_may_shape_who_you_are",
-              thumbnail: "/api/placeholder/200/150"
-            }
-          ],
-          "Leadership & Innovation": [
-            {
-              title: "How Great Leaders Inspire Action",
-              speaker: "Simon Sinek", 
-              url: "https://ted.com/talks/simon_sinek_how_great_leaders_inspire_action",
-              thumbnail: "/api/placeholder/200/150"
-            }
-          ]
-        }
-      };
+    if (!response.ok) {
+      throw new Error(`API call failed: ${response.statusText}`);
+    }
     
-    case 'playlist':
-      return {
-        talks: [
-          {
-            title: "The Puzzle of Motivation",
-            speaker: "Dan Pink",
-            url: "https://ted.com/talks/dan_pink_the_puzzle_of_motivation", 
-            thumbnail: "/api/placeholder/200/150",
-            tags: ["motivation", "psychology", "work"]
-          },
-          {
-            title: "How to Make Stress Your Friend",
-            speaker: "Kelly McGonigal",
-            url: "https://ted.com/talks/kelly_mcgonigal_how_to_make_stress_your_friend",
-            thumbnail: "/api/placeholder/200/150", 
-            tags: ["health", "psychology", "stress"]
-          },
-          {
-            title: "The Happy Secret to Better Work",
-            speaker: "Shawn Achor",
-            url: "https://ted.com/talks/shawn_achor_the_happy_secret_to_better_work",
-            thumbnail: "/api/placeholder/200/150",
-            tags: ["happiness", "productivity", "mindset"]
-          }
-        ] as PlaylistTalk[]
-      };
+    const result = await response.json();
     
-    case 'timeline':
-      return {
-        talks: [
-          {
-            title: "Machines That Think",
-            year: 2015,
-            month: 6,
-            day: 15,
-            thumbnail: "/api/placeholder/200/150",
-            url: "https://ted.com/talks/machines_that_think"
-          },
-          {
-            title: "The Rise of AI",
-            year: 2017,
-            month: 3,
-            day: 22,
-            thumbnail: "/api/placeholder/200/150", 
-            url: "https://ted.com/talks/rise_of_ai"
-          },
-          {
-            title: "How AI Can Save Our Humanity", 
-            year: 2019,
-            month: 11,
-            day: 8,
-            thumbnail: "/api/placeholder/200/150",
-            url: "https://ted.com/talks/ai_save_humanity"
-          },
-          {
-            title: "The Future of Human-AI Collaboration",
-            year: 2021,
-            month: 9,
-            day: 12,
-            thumbnail: "/api/placeholder/200/150",
-            url: "https://ted.com/talks/future_human_ai"
-          }
-        ] as TimelineTalk[]
-      };
+    if (!result.success) {
+      throw new Error(result.error || 'API call failed');
+    }
     
-    default:
-      throw new Error('Unknown action');
+    return result;
+  } catch (error) {
+    console.error(`API Error (${endpoint}):`, error);
+    throw error;
   }
 }
 
@@ -175,19 +94,20 @@ const TedExplorer: React.FC = () => {
     
     setLoading(true);
     try {
-      const [whyResult, recsResult] = await Promise.all([
-        fetchGen('whywatch', { url: talkUrl }),
-        fetchGen('recs', { url: talkUrl })
-      ]);
+      // Call your Python API's explore endpoint
+      const result = await callTeddyAPI('explore', { url: talkUrl });
       
-      // Mock current talk data
+      // Set the current talk from API response
       setCurrentTalk({
-        title: "The Future of Innovation",
-        thumbnail: "/api/placeholder/400/300",
+        title: result.data.input_talk.title || "TED Talk Analysis",
+        thumbnail: result.data.input_talk.thumbnail || "/api/placeholder/400/300",
         url: talkUrl
       });
-      setWhyWatch(whyResult.text);
-      setRecommendations(recsResult.list);
+      
+      // Set the one-liner and recommendations
+      setWhyWatch(result.data.one_liner);
+      setRecommendations(result.data.recommendations);
+      
     } catch (error) {
       toast({
         title: "Error",
@@ -205,8 +125,20 @@ const TedExplorer: React.FC = () => {
     
     setLoading(true);
     try {
-      const result = await fetchGen('playlist', { mood });
-      setPlaylist(result.talks);
+      // Call your Python API's discover endpoint
+      const result = await callTeddyAPI('discover', { mood_activity: mood });
+      
+      // Transform the API response to match your component's expected format
+      const transformedTalks = result.recommendations.map((talk: any) => ({
+        title: talk.title,
+        speaker: talk.speaker,
+        url: talk.url,
+        thumbnail: talk.thumbnail || "/api/placeholder/200/150",
+        tags: talk.tags || []
+      }));
+      
+      setPlaylist(transformedTalks);
+      
     } catch (error) {
       toast({
         title: "Error", 
@@ -223,8 +155,24 @@ const TedExplorer: React.FC = () => {
     
     setLoading(true);
     try {
-      const result = await fetchGen('timeline', { topic });
-      setTimeline(result.talks);
+      // Call your Python API's trace endpoint  
+      const result = await callTeddyAPI('trace', { url: `https://www.ted.com/search?q=${encodeURIComponent(topic)}` });
+      
+      // Transform the API response to match your timeline format
+      const transformedTimeline = result.timeline.map((talk: any) => {
+        const talkDate = new Date(talk.date);
+        return {
+          title: talk.title,
+          year: talkDate.getFullYear(),
+          month: talkDate.getMonth() + 1, 
+          day: talkDate.getDate(),
+          thumbnail: talk.thumbnail || "/api/placeholder/200/150",
+          url: talk.url
+        };
+      });
+      
+      setTimeline(transformedTimeline);
+      
     } catch (error) {
       toast({
         title: "Error",
@@ -251,7 +199,6 @@ const TedExplorer: React.FC = () => {
       });
     }
   };
-
 
   return (
     <div className="min-h-screen bg-background py-8 px-4">
