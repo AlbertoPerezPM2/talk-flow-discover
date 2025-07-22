@@ -270,66 +270,20 @@ const TedExplorer: React.FC = () => {
               </Card>
             )}
 
-            {/* Results Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            {/* Results */}
+            <div className="w-full max-w-2xl mx-auto mt-8">
               {/* Why Watch */}
               <Card className="ted-card">
                 <CardHeader>
-                  <CardTitle>Why Watch?</CardTitle>
+                  <CardTitle>Teddy's Key Insight</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-lg font-semibold italic min-h-[12rem] flex items-center justify-center text-center">
-                    {whyWatch || "Your compelling reason to watch will appear here..."}
+                    {whyWatch || "Teddy's thoughts will appear here..."}
                   </p>
                 </CardContent>
               </Card>
 
-              {/* Recommendations */}
-              <Card className="ted-card">
-                <CardHeader>
-                  <CardTitle>You might also like…</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {Object.keys(recommendations).length > 0 ? (
-                      Object.entries(recommendations).map(([category, recs]) => (
-                        <div key={category}>
-                          <h4 className="font-medium text-sm mb-3 text-primary">
-                            If you're interested in {category}
-                          </h4>
-                          <div className="space-y-3">
-                            {recs.map((rec, idx) => (
-                              <div key={idx} className="flex items-start space-x-3">
-                                <img
-                                  src={rec.thumbnail}
-                                  alt={`${rec.title} thumbnail`}
-                                  className="w-16 h-12 object-cover rounded"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <h5 className="font-medium text-sm line-clamp-2">{rec.title}</h5>
-                                  <p className="text-sm text-muted-foreground">{rec.speaker}</p>
-                                  <a
-                                    href={rec.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-primary text-xs hover:underline flex items-center gap-1 mt-1"
-                                  >
-                                    Watch <ExternalLink className="w-3 h-3" />
-                                  </a>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-muted-foreground text-center py-8">
-                        Recommendations will appear here...
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
 
@@ -398,16 +352,6 @@ const TedExplorer: React.FC = () => {
                       <div className="p-4 space-y-2">
                         <h3 className="font-semibold line-clamp-2">{talk.title}</h3>
                         <p className="text-sm text-muted-foreground">{talk.speaker}</p>
-                        <div className="flex flex-wrap gap-1">
-                          {talk.tags.map((tag, tagIdx) => (
-                            <span
-                              key={tagIdx}
-                              className="px-2 py-1 bg-secondary text-secondary-foreground text-xs rounded-full"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
                         <a
                           href={talk.url}
                           target="_blank"
