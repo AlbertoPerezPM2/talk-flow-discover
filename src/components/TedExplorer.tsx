@@ -36,31 +36,27 @@ interface TimelineTalk {
 
 // Real API function to connect to your Python backend
 async function callTeddyAPI(endpoint: string, payload: any): Promise<any> {
+  console.log('🚀 Making API call to:', endpoint, 'with payload:', payload);
+  
   try {
     const response = await fetch(`http://localhost:5000/api/${endpoint}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     
-    if (!response.ok) {
-      throw new Error(`API call failed: ${response.statusText}`);
-    }
+    console.log('📡 Response status:', response.status);
     
     const result = await response.json();
-    
-    if (!result.success) {
-      throw new Error(result.error || 'API call failed');
-    }
+    console.log('📦 API Response:', result);
     
     return result;
   } catch (error) {
-    console.error(`API Error (${endpoint}):`, error);
+    console.error('❌ API Error:', error);
     throw error;
   }
 }
+
 
 const MoodChip: React.FC<{ mood: string; selected: boolean; onClick: () => void }> = ({
   mood, selected, onClick
@@ -88,77 +84,86 @@ const TedExplorer: React.FC = () => {
   const [timeline, setTimeline] = useState<TimelineTalk[]>([]);
   const { toast } = useToast();
 
-  const handleGenerate = async () => {
-    if (!talkUrl.trim()) return;
+const handleGenerate = async () => {
+  // The input is now a generic query, not just a URL
+  const query = talkUrl; 
+  if (!query.trim()) return;
+  
+  setLoading(true);
+  try {
+    // FIX: Send {'query': query} instead of {'url': talkUrl}
+    const result = await callTeddyAPI('explore', { query: query });
     
-    setLoading(true);
-    try {
-      // Call your Python API's explore endpoint
-      const result = await callTeddyAPI('explore', { url: talkUrl });
-      
-      // Set the current talk from API response
-      setCurrentTalk({
-        title: result.data.input_talk.title || "TED Talk Analysis",
-        thumbnail: result.data.input_talk.thumbnail || "/api/placeholder/400/300",
-        url: talkUrl
-      });
-      
-      // Set the one-liner and recommendations
-      setWhyWatch(result.data.one_liner);
-      setRecommendations(result.data.recommendations);
-      
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate content. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    // Update state based on the new API response structure
+    setCurrentTalk({
+      title: result.data.talk.title,
+      thumbnail: result.data.talk.thumbnail,
+      url: result.data.talk.url
+    });
+    
+    setWhyWatch(result.data.key_insight); // Use the new 'key_insight' field
+    setRecommendations({}); // Clear the old recommendations
+    
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to generate content. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
+    } 
   };
+
 
   const handleGeneratePlaylist = async () => {
-    const combinedInput = customMood.trim() || `${selectedMood} + ${selectedActivity}`;
-    if (!customMood.trim() && (!selectedMood || !selectedActivity)) return;
+  // Assuming you have separate state for mood and activity now
+  // For example: const [selectedMood, setSelectedMood] = useState('');
+  // const [selectedActivity, setSelectedActivity] = useState('');
+
+  if (!selectedMood || !selectedActivity) {
+    toast({
+      title: "Input Required",
+      description: "Please select both a mood and an activity.",
+      variant: "destructive",
+    });
+    return;
+  }
+  
+  setLoading(true);
+  try {
+    // FIX: Send 'mood', 'activity', and 'free_text' separately
+    const result = await callTeddyAPI('discover', { 
+      mood: selectedMood,
+      activity: selectedActivity,
+      free_text: customMood // 'customMood' can be used for the optional free text
+    });
     
-    setLoading(true);
-    try {
-      // Call your Python API's discover endpoint
-      const result = await callTeddyAPI('discover', { mood_activity: combinedInput });
-      
-      // Transform the API response to match your component's expected format
-      const transformedTalks = result.recommendations.map((talk: any) => ({
-        title: talk.title,
-        speaker: talk.speaker,
-        url: talk.url,
-        thumbnail: talk.thumbnail || "/api/placeholder/200/150",
-        tags: talk.tags || []
-      }));
-      
-      setPlaylist(transformedTalks);
-      
-    } catch (error) {
-      toast({
-        title: "Error", 
-        description: "Failed to generate playlist. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    // The rest of your function to set the playlist
+    setPlaylist(result.recommendations);
+    
+  } catch (error) {
+    toast({
+      title: "Error", 
+      description: "Failed to generate playlist. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
     }
   };
 
+
   const handleGenerateTimeline = async () => {
-    if (!topic.trim()) return;
+  if (!topic.trim()) return;
+  
+  setLoading(true);
+  try {
+    // FIX: Send {'topic': topic} as the payload
+    const result = await callTeddyAPI('trace', { topic: topic });
     
-    setLoading(true);
-    try {
-      // Call your Python API's trace endpoint  
-      const result = await callTeddyAPI('trace', { url: `https://www.ted.com/search?q=${encodeURIComponent(topic)}` });
-      
-      // Transform the API response to match your timeline format
-      const transformedTimeline = result.timeline.map((talk: any) => {
+    // The rest of your data transformation logic...
+    const transformedTimeline = result.timeline.map((talk: any) => {
         const talkDate = new Date(talk.date);
         return {
           title: talk.title,
@@ -172,16 +177,17 @@ const TedExplorer: React.FC = () => {
       
       setTimeline(transformedTimeline);
       
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate timeline. Please try again.", 
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to generate timeline. Please try again.", 
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
     }
   };
+
 
   const copyToClipboard = async (text: string) => {
     try {
