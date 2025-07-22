@@ -231,7 +231,7 @@ const TedExplorer: React.FC = () => {
             <Card className="w-full max-w-2xl mx-auto ted-card">
               <CardContent className="space-y-4">
                 <Input
-                  placeholder="Paste or search a TED Talk URL…"
+                  placeholder="What do you want to explore?"
                   value={talkUrl}
                   onChange={(e) => setTalkUrl(e.target.value)}
                   className="w-full"
@@ -374,7 +374,7 @@ const TedExplorer: React.FC = () => {
             <Card className="w-full max-w-2xl mx-auto ted-card">
               <CardContent className="space-y-4">
                 <Input
-                  placeholder="Enter a topic e.g. Artificial Intelligence"
+                  placeholder="What topic do you want to trace? E.g. Artificial Intelligence"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                 />
