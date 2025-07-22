@@ -7,10 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Compass, Sparkles, Clock, Wand2, ListMusic, AlertTriangle, Copy, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const moods = [
-  'Inspired', 'Nostalgic', 'Curious', 'Hopeful', 'Reflective', 'Motivated',
-  'Morning-coffee', 'Commuting', 'Lunch-break', 'Wind-down', 'Group-discussion', 'Workout'
-];
+const moods = ['Inspirational', 'Educational', 'Contemplative', 'Energetic', 'Calming', 'Challenging'];
+const activities = ['Work', 'Personal Growth', 'Creativity', 'Wellness', 'Learning', 'Relaxation'];
 
 interface TalkRecommendation {
   title: string;
@@ -83,6 +81,7 @@ const TedExplorer: React.FC = () => {
   const [whyWatch, setWhyWatch] = useState('');
   const [recommendations, setRecommendations] = useState<{ [category: string]: TalkRecommendation[] }>({});
   const [selectedMood, setSelectedMood] = useState<string>('');
+  const [selectedActivity, setSelectedActivity] = useState<string>('');
   const [customMood, setCustomMood] = useState('');
   const [playlist, setPlaylist] = useState<PlaylistTalk[]>([]);
   const [topic, setTopic] = useState('');
@@ -120,13 +119,13 @@ const TedExplorer: React.FC = () => {
   };
 
   const handleGeneratePlaylist = async () => {
-    const mood = selectedMood || customMood;
-    if (!mood.trim()) return;
+    const combinedInput = customMood.trim() || `${selectedMood} + ${selectedActivity}`;
+    if (!customMood.trim() && (!selectedMood || !selectedActivity)) return;
     
     setLoading(true);
     try {
       // Call your Python API's discover endpoint
-      const result = await callTeddyAPI('discover', { mood_activity: mood });
+      const result = await callTeddyAPI('discover', { mood_activity: combinedInput });
       
       // Transform the API response to match your component's expected format
       const transformedTalks = result.recommendations.map((talk: any) => ({
@@ -336,11 +335,12 @@ const TedExplorer: React.FC = () => {
 
           {/* Discover Tab */}
           <TabsContent value="discover" className="space-y-8">
-            {/* Mood Selection Card */}
+            {/* Mood & Activity Selection Card */}
             <Card className="w-full max-w-2xl mx-auto ted-card">
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
+                {/* Mood Selection */}
                 <div>
-                  <label className="block text-sm font-medium mb-3">Pick a mood or activity…</label>
+                  <label className="block text-sm font-medium mb-3">Pick a mood</label>
                   <div className="flex flex-wrap gap-2">
                     {moods.map((mood) => (
                       <MoodChip
@@ -352,14 +352,30 @@ const TedExplorer: React.FC = () => {
                     ))}
                   </div>
                 </div>
+                
+                {/* Activity Selection */}
+                <div>
+                  <label className="block text-sm font-medium mb-3">Now pick an activity</label>
+                  <div className="flex flex-wrap gap-2">
+                    {activities.map((activity) => (
+                      <MoodChip
+                        key={activity}
+                        mood={activity}
+                        selected={selectedActivity === activity}
+                        onClick={() => setSelectedActivity(selectedActivity === activity ? '' : activity)}
+                      />
+                    ))}
+                  </div>
+                </div>
+                
                 <Input
-                  placeholder="…or type your own"
+                  placeholder="What do you want to discover?"
                   value={customMood}
                   onChange={(e) => setCustomMood(e.target.value)}
                 />
                 <Button
                   onClick={handleGeneratePlaylist}
-                  disabled={loading || (!selectedMood && !customMood.trim())}
+                  disabled={loading || (!selectedMood || !selectedActivity) && !customMood.trim()}
                   className="w-full ted-button flex items-center gap-2"
                 >
                   <ListMusic className="w-4 h-4" />
