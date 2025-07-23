@@ -10,6 +10,56 @@ import { useToast } from '@/hooks/use-toast';
 const moods = ['Inspirational', 'Educational', 'Contemplative', 'Energetic', 'Calming', 'Challenging'];
 const activities = ['Work', 'Personal Growth', 'Creativity', 'Wellness', 'Learning', 'Relaxation'];
 
+const handleGenerateTimeline = async () => {
+  if (!topic.trim()) return;
+  
+  setLoading(true);
+  try {
+    const result = await callTeddyAPI('trace', { topic: topic });
+    console.log('🗓️ Raw API response:', result);
+    
+    const apiTalks = result.timeline || result.talks || [];
+    console.log('🗓️ API talks data:', apiTalks);
+    
+    // Process timeline using backend-provided formatted dates
+    const processedTimeline = apiTalks.map((talk) => {
+      console.log('🗓️ Processing talk:', {
+        title: talk.title,
+        display_date: talk.display_date,
+        date_published: talk.date_published,
+        timestamp: talk.timestamp
+      });
+      
+      return {
+        title: talk.title,
+        thumbnail: talk.thumbnail || "/api/placeholder/200/150",
+        url: talk.url,
+        displayDate: talk.display_date || talk.date_published || 'Unknown Date',
+        sortKey: talk.timestamp || 0
+      };
+    });
+    
+    // Sort by timestamp
+    processedTimeline.sort((a, b) => a.sortKey - b.sortKey);
+    console.log('✅ Final processed timeline:', processedTimeline);
+    
+    setTimeline(processedTimeline);
+  } catch (error) {
+    console.error('❌ Timeline Error:', error);
+    toast({
+      title: "Error",
+      description: "Failed to generate timeline. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+
+
 interface TalkRecommendation {
   title: string;
   speaker: string;
@@ -27,11 +77,10 @@ interface PlaylistTalk {
 
 interface TimelineTalk {
   title: string;
-  year: number;
-  month: number;
-  day: number;
   thumbnail: string;
   url: string;
+  displayDate: string;
+  sortKey: number;
 }
 
 // Real API function to connect to your Python backend
@@ -85,26 +134,27 @@ const TedExplorer: React.FC = () => {
   const { toast } = useToast();
 
 const handleGenerate = async () => {
-  // The input is now a generic query, not just a URL
-  const query = talkUrl; 
+  const query = talkUrl;
   if (!query.trim()) return;
   
   setLoading(true);
   try {
-    // FIX: Send {'query': query} instead of {'url': talkUrl}
     const result = await callTeddyAPI('explore', { query: query });
     
-    // Update state based on the new API response structure
+    // 🔍 DEBUG: Log the entire API response
+    console.log('🐛 Full API Response:', JSON.stringify(result, null, 2));
+    console.log('🖼️ Thumbnail value:', result?.data?.talk?.thumbnail);
+    
     setCurrentTalk({
       title: result.data.talk.title,
       thumbnail: result.data.talk.thumbnail,
       url: result.data.talk.url
     });
     
-    setWhyWatch(result.data.key_insight); // Use the new 'key_insight' field
-    setRecommendations({}); // Clear the old recommendations
-    
+    setWhyWatch(result.data.key_insight);
+    setRecommendations({});
   } catch (error) {
+    console.error('❌ API Error:', error);
     toast({
       title: "Error",
       description: "Failed to generate content. Please try again.",
@@ -112,8 +162,9 @@ const handleGenerate = async () => {
     });
   } finally {
     setLoading(false);
-    } 
+    }
   };
+
 
 
   const handleGeneratePlaylist = async () => {
@@ -159,34 +210,47 @@ const handleGenerate = async () => {
   
   setLoading(true);
   try {
-    // FIX: Send {'topic': topic} as the payload
     const result = await callTeddyAPI('trace', { topic: topic });
+    console.log('🗓️ Raw API response:', result);
     
-    // The rest of your data transformation logic...
-    const transformedTimeline = result.timeline.map((talk: any) => {
-        const talkDate = new Date(talk.date);
-        return {
-          title: talk.title,
-          year: talkDate.getFullYear(),
-          month: talkDate.getMonth() + 1, 
-          day: talkDate.getDate(),
-          thumbnail: talk.thumbnail || "/api/placeholder/200/150",
-          url: talk.url
-        };
+    const apiTalks = result.timeline || result.talks || [];
+    console.log('🗓️ API talks data:', apiTalks);
+    
+    // Process timeline using backend-provided formatted dates
+    const processedTimeline = apiTalks.map((talk) => {
+      console.log('🗓️ Processing talk:', {
+        title: talk.title,
+        display_date: talk.display_date,
+        date_published: talk.date_published,
+        timestamp: talk.timestamp
       });
       
-      setTimeline(transformedTimeline);
-      
+      return {
+        title: talk.title,
+        thumbnail: talk.thumbnail || "/api/placeholder/200/150",
+        url: talk.url,
+        displayDate: talk.display_date || talk.date_published || 'Unknown Date',
+        sortKey: talk.timestamp || 0
+      };
+    });
+    
+    // Sort by timestamp
+    processedTimeline.sort((a, b) => a.sortKey - b.sortKey);
+    console.log('✅ Final processed timeline:', processedTimeline);
+    
+    setTimeline(processedTimeline);
   } catch (error) {
+    console.error('❌ Timeline Error:', error);
     toast({
       title: "Error",
-      description: "Failed to generate timeline. Please try again.", 
+      description: "Failed to generate timeline. Please try again.",
       variant: "destructive",
     });
   } finally {
     setLoading(false);
-    }
-  };
+  }
+};
+
 
 
   const copyToClipboard = async (text: string) => {
@@ -426,11 +490,7 @@ const handleGenerate = async () => {
                             <div className="p-4">
                               <h3 className="font-semibold text-sm mb-2 line-clamp-2">{talk.title}</h3>
                               <p className="text-xs text-muted-foreground">
-                                {new Date(talk.year, talk.month - 1, talk.day).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric'
-                                })}
+                                {talk.displayDate}
                               </p>
                             </div>
                           </CardContent>
